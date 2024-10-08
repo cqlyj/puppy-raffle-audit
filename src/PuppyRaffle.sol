@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.6;
-// @audit-info use of floating pragma is bad
-// @audit-info why use 0.7.6?
+// @written use of floating pragma is bad
+// @written why use 0.7.6?
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -23,7 +23,7 @@ contract PuppyRaffle is ERC721, Ownable {
     uint256 public immutable entranceFee;
 
     address[] public players;
-    // @audit-gas this should be immutable
+    // @written this should be immutable
     uint256 public raffleDuration;
     uint256 public raffleStartTime;
     address public previousWinner;
@@ -38,7 +38,7 @@ contract PuppyRaffle is ERC721, Ownable {
     mapping(uint256 => string) public rarityToName;
 
     // Stats for the common puppy (pug)
-    // @audit-gas should be constant
+    // @written should be constant
     string private commonImageUri =
         "ipfs://QmSsYRx3LpDAb1GZQm7zZ1AuHZjfbPkD6J7s9r41xu1mf8";
     uint256 public constant COMMON_RARITY = 70;
@@ -70,7 +70,7 @@ contract PuppyRaffle is ERC721, Ownable {
         uint256 _raffleDuration
     ) ERC721("Puppy Raffle", "PR") {
         entranceFee = _entranceFee;
-        // @audit-info check for zero address / input validation
+        // @written check for zero address / input validation
         feeAddress = _feeAddress;
         raffleDuration = _raffleDuration;
         raffleStartTime = block.timestamp;
@@ -98,8 +98,8 @@ contract PuppyRaffle is ERC721, Ownable {
         }
 
         // Check for duplicates
-        // @audit DoS
-        // @audit-gas uint256 playerLength = players.length;
+        // @written-skip DoS
+        // @written uint256 playerLength = players.length;
         for (uint256 i = 0; i < players.length - 1; i++) {
             for (uint256 j = i + 1; j < players.length; j++) {
                 require(
@@ -109,14 +109,14 @@ contract PuppyRaffle is ERC721, Ownable {
             }
         }
 
-        // @audit/followup if it's an empty array, we still emit the event?
+        // written-skip if it's an empty array, we still emit the event?
         emit RaffleEnter(newPlayers);
     }
 
     /// @param playerIndex the index of the player to refund. You can find it externally by calling `getActivePlayerIndex`
     /// @dev This function will allow there to be blank spots in the array
     function refund(uint256 playerIndex) public {
-        // @audit MEV
+        // written-skip MEV
         address playerAddress = players[playerIndex];
         require(
             playerAddress == msg.sender,
@@ -127,7 +127,7 @@ contract PuppyRaffle is ERC721, Ownable {
             "PuppyRaffle: Player already refunded, or is not active"
         );
 
-        // @audit Reentrancy
+        // written Reentrancy
         payable(msg.sender).sendValue(entranceFee);
 
         players[playerIndex] = address(0);
@@ -145,7 +145,7 @@ contract PuppyRaffle is ERC721, Ownable {
                 return i;
             }
         }
-        // @audit if the player is at index 0, it will return 0 and the player might think they are not active!
+        // @written if the player is at index 0, it will return 0 and the player might think they are not active!
         return 0;
     }
 
@@ -156,14 +156,14 @@ contract PuppyRaffle is ERC721, Ownable {
     /// @dev we reset the active players array after the winner is selected
     /// @dev we send 80% of the funds to the winner, the other 20% goes to the feeAddress
     function selectWinner() external {
-        // @audit-info recommend to follow CEI
+        // @written recommend to follow CEI
         require(
             block.timestamp >= raffleStartTime + raffleDuration,
             "PuppyRaffle: Raffle not over"
         );
         require(players.length >= 4, "PuppyRaffle: Need at least 4 players");
 
-        // @audit weak PRNG
+        // @written weak PRNG
         uint256 winnerIndex = uint256(
             keccak256(
                 abi.encodePacked(msg.sender, block.timestamp, block.difficulty)
@@ -171,25 +171,25 @@ contract PuppyRaffle is ERC721, Ownable {
         ) % players.length;
         address winner = players[winnerIndex];
 
-        // @audit-info why not just do address(this).balance?
+        // written-skip why not just do address(this).balance?
         uint256 totalAmountCollected = players.length * entranceFee;
 
-        // @audit-info magic numbers
+        // written magic numbers
         // uint256 public constant PRIZE_POOL_PERCENTAGE = 80;
         // uint256 public constant FEE_PERCENTAGE = 20;
         // uint256 public constant POOL_PRECISION = 100;
         uint256 prizePool = (totalAmountCollected * 80) / 100;
         uint256 fee = (totalAmountCollected * 20) / 100;
 
-        // @audit overflow
-        // @audit unsafe cast of uint256 to uint64
+        // @written overflow
+        // @written unsafe cast of uint256 to uint64
         totalFees = totalFees + uint64(fee);
 
         uint256 tokenId = totalSupply();
 
         // We use a different RNG calculate from the winnerIndex to determine rarity
-        // @audit weak PRNG
-        // @audit people can revert the TX till they win
+        // @written weak PRNG
+        // @written people can revert the TX till they win
         uint256 rarity = uint256(
             keccak256(abi.encodePacked(msg.sender, block.difficulty))
         ) % 100;
@@ -205,7 +205,7 @@ contract PuppyRaffle is ERC721, Ownable {
         raffleStartTime = block.timestamp;
         previousWinner = winner;
 
-        // @audit the winner would not get the money if their fallback was messed up!
+        // @written the winner would not get the money if their fallback was messed up!
         (bool success, ) = winner.call{value: prizePool}("");
         require(success, "PuppyRaffle: Failed to send prize pool to winner");
         _safeMint(winner, tokenId);
@@ -213,7 +213,7 @@ contract PuppyRaffle is ERC721, Ownable {
 
     /// @notice this function will withdraw the fees to the feeAddress
     function withdrawFees() external {
-        // @audit mishandling of ETH
+        // written-skip mishandling of ETH
         require(
             address(this).balance == uint256(totalFees),
             "PuppyRaffle: There are currently players active!"
@@ -234,7 +234,7 @@ contract PuppyRaffle is ERC721, Ownable {
     }
 
     /// @notice this function will return true if the msg.sender is an active player
-    // @audit this isn't used anywhere
+    // written-skip this isn't used anywhere
     function _isActivePlayer() internal view returns (bool) {
         for (uint256 i = 0; i < players.length; i++) {
             if (players[i] == msg.sender) {
