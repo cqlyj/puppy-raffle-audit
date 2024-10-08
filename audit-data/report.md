@@ -13,7 +13,7 @@ header-includes:
 \centering
 \includegraphics[width=0.5\textwidth]{logo.pdf}
 \end{figure}
-\vspace\*{2cm}
+\vspace{2cm}
 {\Huge\bfseries Puppy Raffle Audit Report\par}
 \vspace{1cm}
 {\Large Version 1.0\par}
@@ -39,11 +39,30 @@ Lead Auditors:
 - [Disclaimer](#disclaimer)
 - [Risk Classification](#risk-classification)
 - [Audit Details](#audit-details)
-  - [Scope:](#scope)
+  - [Scope](#scope)
   - [Roles](#roles)
 - [Executive Summary](#executive-summary)
   - [Issues found](#issues-found)
 - [Findings](#findings)
+  - [High](#high)
+    - [\[H-1\] Reentrancy attack in `PuppyRaffle::refund` allows draining the contract balance](#h-1-reentrancy-attack-in-puppyrafflerefund-allows-draining-the-contract-balance)
+    - [\[H-2\] Weak randomness in `PuppyRaffle::selectWinner` allows user to influence or predict the winner and influence or predict the winning puppy.](#h-2-weak-randomness-in-puppyraffleselectwinner-allows-user-to-influence-or-predict-the-winner-and-influence-or-predict-the-winning-puppy)
+    - [\[H-3\] Integer overflow of `PuppyRaffle::totalFees` loses fees](#h-3-integer-overflow-of-puppyraffletotalfees-loses-fees)
+  - [Medium](#medium)
+    - [\[M-1\] Looping through players array to check for duplicates in `PuppyRaffle::enterRaffle` is a potential denial of service (DoS) attack, increasing gas costs for future entrants.](#m-1-looping-through-players-array-to-check-for-duplicates-in-puppyraffleenterraffle-is-a-potential-denial-of-service-dos-attack-increasing-gas-costs-for-future-entrants)
+    - [\[M-2\] Unsafe cast of `PuppyRaffle::fee` lose fees](#m-2-unsafe-cast-of-puppyrafflefee-lose-fees)
+    - [\[M-3\] Smart contract wallets raffle winners without a `receive`/`fallback` function will block the start of a new contest.](#m-3-smart-contract-wallets-raffle-winners-without-a-receivefallback-function-will-block-the-start-of-a-new-contest)
+  - [Low](#low)
+    - [\[L-1\] `PuppyRaffle::getActivePlayerIndex` returns 0 for non-existent players and for players at index 0, causing a player at index 0 to incorrectly think they have not entered the raffle.](#l-1-puppyrafflegetactiveplayerindex-returns-0-for-non-existent-players-and-for-players-at-index-0-causing-a-player-at-index-0-to-incorrectly-think-they-have-not-entered-the-raffle)
+  - [Gas](#gas)
+    - [\[G-1\] Unchanged state variables should be declared constant or immutable.](#g-1-unchanged-state-variables-should-be-declared-constant-or-immutable)
+    - [\[G-2\] Storage variables in a loop should be cached](#g-2-storage-variables-in-a-loop-should-be-cached)
+  - [Informational/Non-critical](#informationalnon-critical)
+    - [\[I-1\] Solidity pragma should be specific, not wide](#i-1-solidity-pragma-should-be-specific-not-wide)
+    - [\[I-2\] Using an outdated version of Solidity is not recommended.](#i-2-using-an-outdated-version-of-solidity-is-not-recommended)
+    - [\[I-3\] Missing checks for `address(0)` when assigning values to address state variables](#i-3-missing-checks-for-address0-when-assigning-values-to-address-state-variables)
+    - [\[I-4\] `PuppyRaffle::selectWinner` does not follow CEI, which is not best practice.](#i-4-puppyraffleselectwinner-does-not-follow-cei-which-is-not-best-practice)
+    - [\[I-5\] Use of "Magic" numbers is discouraged](#i-5-use-of-magic-numbers-is-discouraged)
 
 # Protocol Summary
 
@@ -75,7 +94,7 @@ We use the [CodeHawks](https://docs.codehawks.com/hawks-auditors/how-to-evaluate
 
 - Commit Hash: 2a47715b30cf11ca82db148704e67652ad679cd8
 
-## Scope:
+## Scope
 
 ```
 ./src/
