@@ -293,6 +293,29 @@ contract PuppyRaffleTest is Test {
         (bool success, ) = payable(address(puppyRaffle)).call{value: 1e18}("");
         require(success);
     }
+
+    function testTotalFeesOverFlow() public {
+        address[] memory players = new address[](100);
+        for (uint160 i = 0; i < 100; i++) {
+            players[i] = address(i);
+        }
+
+        puppyRaffle.enterRaffle{value: entranceFee * 100}(players);
+
+        vm.warp(block.timestamp + duration + 1);
+        vm.roll(block.number + 1);
+
+        uint256 expectedTotalFees = (100 * entranceFee * 20) / 100;
+
+        puppyRaffle.selectWinner();
+
+        uint64 actualTotalFees = puppyRaffle.totalFees();
+
+        console.log("Expected total fees: ", expectedTotalFees);
+        console.log("Actual total fees: ", uint256(actualTotalFees));
+
+        assert(expectedTotalFees != uint256(actualTotalFees));
+    }
 }
 
 contract ReentrancyAttacker {
